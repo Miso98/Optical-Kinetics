@@ -7,6 +7,7 @@ import scipy.optimize as opt
 from scipy.optimize import curve_fit
 matplotlib.rcParams.update({'font.size': 16})
 from sklearn.metrics import r2_score 
+from scipy.stats import linregress
 
 #This value is pulled from literature and used as a conversion factor
 absorbtivity = 20000 * 0.24 
@@ -121,6 +122,7 @@ pin0=True
 
 #ladder concentrations
 exp_concs = [0, 1, 5, 20, 150, 250]
+max_absorbance_values = []
 
 #initializing one figure two subplots
 #fig, axs = plt.subplots(nrows = 1, ncols = 6, figsize=(15,6))
@@ -144,6 +146,9 @@ for i in range(len(exp_concs)):
     
     #absorbance from transmission A = -log(T) 
     absorbance_values = -np.log10(transmission_values)
+    max_absorbance = np.max(absorbance_values)
+    max_absorbance_values.append(max_absorbance)
+    
     
     #absorbance values are more or less irrelevant against time, looking for asymptotic values for linearity
     # axs[i].plot(experiment[:,0], experiment[:,1], label=f'{exp_concs[i]}+uM')
@@ -196,18 +201,39 @@ for i in range(len(exp_concs)):
         else:
             curve_coeff[i] = round(popt[i], 3)
         
-
+    #absorbance from transmission A = -log(T) 
+    
+    
+   
     equation_text = f'{curve_coeff} , r^2 = {r2_calc}'
     # axs[i].text(0.1, 0.1, equation_text, transform=axs[i].transAxes, fontsize=10, verticalalignment='top')
     plt.text(0.1, 0.1, equation_text, fontsize=10, verticalalignment='top')
     plt.show()
     
-    
+   
 # fig.tight_layout()    
 # fig.show()
 
 
-#does not automatically plot graph needs this for powershell and embedded vs terminal
+# Perform linear regression
+slope, intercept, r_value, p_value, std_err = linregress(exp_concs, max_absorbance_values)
 
+# Calculate regression line
+regression_line = slope * np.array(exp_concs) + intercept
+plt.figure(6)
+plt.scatter(exp_concs, max_absorbance_values,  label='Data Points')   
+plt.plot(exp_concs, regression_line, linestyle='-', color='r', label='Regression Line')
+
+plt.xlabel("Concentration (uM)")
+plt.ylabel("Final Absorbance")
+plt.title(f'Absorbance vs Concentration(uM)')
+plt.grid(True)
+plt.legend(loc = 5)
+
+equation_text = f'y = {slope:.3f}x + {intercept:.3f}\n$R^2$ = {r_value**2:.3f}'
+plt.text(0.05, 0.95, equation_text, transform=plt.gca().transAxes, fontsize=12, verticalalignment='top')
+
+plt.show()
+#does not automatically plot graph needs this for powershell and embedded vs terminal
 
 #This plots the absorbance vs time graphs use for ladder experiments to check linearity of resultants   
